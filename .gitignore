@@ -1,5 +1,26 @@
-# Object file
-*.o
+# Build output
+[Bb]in/
+[Oo]bj/
+[Dd]ebug/
+[Rr]elease/
+[Aa]rtifacts/
 
-# Ada Library Information
-*.ali
+# Visual Studio and IDE files
+.vs/
+*.user
+*.suo
+*.userosscache
+*.sln.docstates
+
+# Test and coverage output
+[Tt]est[Rr]esult*/
+coverage/
+coverage.*
+
+# NuGet packages
+*.nupkg
+*.snupkg
+
+# OS files
+.DS_Store
+Thumbs.db
