@@ -1,8 +1,9 @@
 ﻿using Microsoft.Extensions.AI;
+using System.Runtime.CompilerServices;
 
 namespace VacationPlanner;
 
-public class TripPlanner (IChatClient chat)
+public class TripPlanner(IChatClient chat)
 {
     private const string Instructions = """
         You are TripPlanner, an expert trip planner.
@@ -24,25 +25,62 @@ public class TripPlanner (IChatClient chat)
         - Mark all prices as approximate.
         - Keep each point to 1-2 sentences.
         """;
+    ////public async Task<string> PlanAsync(
+    ////    string destination, 
+    ////    int days, 
+    ////    string researchNotes,
+    ////    CancellationToken ct = default)
+    ////{
+    ////    List<ChatMessage> messages =
+    ////    [
+    ////        new(ChatRole.System, Instructions),
+    ////        new(ChatRole.User, $"""
+    ////            Destination: {destination}
+    ////            Trip length: {days} days
+
+    ////            Research notes:
+    ////            {researchNotes}
+    ////            """)
+    ////    ];
+
+    ////    var response = await chat.GetResponseAsync(messages, cancellationToken: ct);
+    ////    return response.Text;
+    ////}
+    ///
+
     public async Task<string> PlanAsync(
         string destination, 
         int days, 
         string researchNotes,
         CancellationToken ct = default)
     {
-        List<ChatMessage> messages =
-        [
-            new(ChatRole.System, Instructions),
-            new(ChatRole.User, $"""
-                Destination: {destination}
-                Trip length: {days} days
-
-                Research notes:
-                {researchNotes}
-                """)
-        ];
-
-        var response = await chat.GetResponseAsync(messages, cancellationToken: ct);
+        var response = await chat.GetResponseAsync(BuildMessages(destination, days, researchNotes),
+                                                   cancellationToken: ct);
         return response.Text;
     }
+
+
+    // New streaming version: yields text pieces as the model writes them
+    public async IAsyncEnumerable<string> PlanStreamingAsync(string destination, int days, string researchNotes,
+                                        [EnumeratorCancellation] CancellationToken ct = default)
+    {
+        await foreach (var update in chat.GetStreamingResponseAsync(
+                           BuildMessages(destination, days, researchNotes), cancellationToken: ct))
+        {
+            if (!string.IsNullOrEmpty(update.Text))
+                yield return update.Text;
+        }
+    }
+
+    private static List<ChatMessage> BuildMessages(string destination, int days, string researchNotes) =>
+    [
+        new(ChatRole.System, Instructions),
+        new(ChatRole.User, $"""
+            Destination: {destination}
+            Trip length: {days} days
+
+            Research notes:
+            {researchNotes}
+            """)
+    ];
 }

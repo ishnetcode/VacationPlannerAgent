@@ -111,42 +111,53 @@
     <script type="module">
           const form = document.getElementById("planForm");
           const button = document.getElementById("planButton");
-          const status = document.getElementById("status");
+          const statusEl = document.getElementById("status");
           const report = document.getElementById("report");
 
-          form.addEventListener("submit", async (e) => {
-            e.preventDefault();  // stop the browser reloading the page
+          form.addEventListener("submit", (e) => {
+            e.preventDefault();
 
             const destination = document.getElementById("destination").value.trim();
             const days = document.getElementById("days").value;
 
-            // Show a "working" state with a timer, since the agents take 20-40 seconds
             button.disabled = true;
             report.innerHTML = "";
-            status.className = "";
-            let seconds = 0;
-            status.textContent = "🧭 Researching and planning... 0s";
-            const timer = setInterval(() => {
-              seconds++;
-              status.textContent = `🧭 Researching and planning... ${seconds}s`;
-            }, 1000);
+            statusEl.className = "";
+            statusEl.textContent = "Starting...";
 
-            try {
-              // Call your existing /plan endpoint
-              const url = `/plan?destination=${encodeURIComponent(destination)}&days=${days}`;
-              const response = await fetch(url);
-              if (!response.ok) throw new Error(`Server returned ${response.status}`);
+            let markdown = "";
+            const started = Date.now();
+            const url = `/plan-stream?destination=${encodeURIComponent(destination)}&days=${days}`;
 
-              const markdown = await response.text();
+            // EventSource = the browser's built-in SSE client
+            const source = new EventSource(url);
+
+            // Status messages: show them under the form
+            source.addEventListener("status", (e) => {
+              statusEl.textContent = e.data;
+            });
+
+            // Report chunks: add to the text so far and re-render
+            source.addEventListener("chunk", (e) => {
+              markdown += e.data;
               report.innerHTML = DOMPurify.sanitize(marked.parse(markdown));
-              status.textContent = `✅ Done in ${seconds}s`;
-            } catch (err) {
-              status.className = "error";
-              status.textContent = `❌ Something went wrong: ${err.message}. Check the terminal for details.`;
-            } finally {
-              clearInterval(timer);
+            });
+
+            // Finished: IMPORTANT - close, or the browser will reconnect and run everything again!
+            source.addEventListener("done", () => {
+              source.close();
+              const seconds = Math.round((Date.now() - started) / 1000);
+              statusEl.textContent = `✅ Done in ${seconds}s`;
               button.disabled = false;
-            }
+            });
+
+            // Something went wrong (server error, app stopped, etc.)
+            source.onerror = () => {
+              source.close();
+              statusEl.className = "error";
+              statusEl.textContent = "❌ Something went wrong. Check the terminal for details.";
+              button.disabled = false;
+            };
           });
     </script>
 </body>

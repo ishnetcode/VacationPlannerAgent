@@ -2,6 +2,8 @@ using Amazon;
 using Amazon.BedrockRuntime;
 using Microsoft.Extensions.AI;
 using VacationPlanner;
+using System.Net.ServerSentEvents;
+using System.Runtime.CompilerServices;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -54,6 +56,27 @@ app.MapGet("/plan", async (string destination, int days,
 
     Console.WriteLine("✅ Done");
     return report;
+});
+
+app.MapGet("/plan-stream", (string destination, int days,
+                            VacationResearcher researcher, TripPlanner planner,
+                            CancellationToken ct) =>
+{
+    return TypedResults.ServerSentEvents(RunAgents(ct));
+
+    async IAsyncEnumerable<SseItem<string>> RunAgents([EnumeratorCancellation] CancellationToken token)
+    {
+        // Agent 1: research (not streamed, but we send a status update first)
+        yield return new SseItem<string>($"🧭 Researching {destination}...", "status");
+        var notes = await researcher.ResearchAsync(destination, token);
+
+        // Agent 2: plan (streamed piece by piece)
+        yield return new SseItem<string>("📝 Writing your trip plan...", "status");
+        await foreach (var chunk in planner.PlanStreamingAsync(destination, days, notes, token))
+            yield return new SseItem<string>(chunk, "chunk");
+
+        yield return new SseItem<string>("done", "done");
+    }
 });
 
 app.Run();
