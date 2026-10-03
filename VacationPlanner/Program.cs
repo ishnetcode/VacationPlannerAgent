@@ -7,6 +7,14 @@ using System.Runtime.CompilerServices;
 
 var builder = WebApplication.CreateBuilder(args);
 
+var awsProfile = builder.Configuration["AWS:Profile"];
+if (!string.IsNullOrEmpty(awsProfile))
+{
+    AWSConfigs.AWSProfileName = awsProfile;
+}
+
+Console.WriteLine($"🔧 Environment: {builder.Environment.EnvironmentName} | AWS profile: {awsProfile ?? "(none)"}");
+
 // 1. Create a Bedrock client, then wrap it as a standard IChatClient
 var modelId = builder.Configuration["Bedrock:ModelId"] ?? throw new ArgumentNullException("ModelId is not set in configuration.");
 IAmazonBedrockRuntime bedrock = new AmazonBedrockRuntimeClient(RegionEndpoint.EUWest1);

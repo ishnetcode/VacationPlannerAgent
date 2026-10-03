@@ -7,8 +7,7 @@
       "launchBrowser": true,
       "applicationUrl": "http://localhost:5276",
       "environmentVariables": {
-        "ASPNETCORE_ENVIRONMENT": "Development",
-        "AWS_PROFILE": ""
+        "ASPNETCORE_ENVIRONMENT": "Development"
       }
     },
     "https": {
@@ -17,8 +16,7 @@
       "launchBrowser": true,
       "applicationUrl": "https://localhost:7254;http://localhost:5276",
       "environmentVariables": {
-        "ASPNETCORE_ENVIRONMENT": "Development",
-        "AWS_PROFILE": ""
+        "ASPNETCORE_ENVIRONMENT": "Development"
       }
     }
   }
