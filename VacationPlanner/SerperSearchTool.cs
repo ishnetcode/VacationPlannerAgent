@@ -10,6 +10,8 @@ public class SerperSearchTool(HttpClient http, IConfiguration config)
     public async Task<string> SearchWebAsync(
         [Description("What to search for, e.g. 'average hotel price per night Lisbon'")] string query)
     {
+        Console.WriteLine($"🔎 Agent is searching: {query}");
+
         var apiKey = config["Serper:ApiKey"] ?? throw new ArgumentNullException("Serper:ApiKey is not set in configuration.");
 
         // 1. Build the request Serper expects

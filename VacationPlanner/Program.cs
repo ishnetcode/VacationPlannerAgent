@@ -10,10 +10,13 @@ var modelId = builder.Configuration["Bedrock:ModelId"] ?? throw new ArgumentNull
 IAmazonBedrockRuntime bedrock = new AmazonBedrockRuntimeClient(RegionEndpoint.EUWest1);
 
 // 2. Register it so any part of the app can ask for an IChatClient
-builder.Services.AddChatClient(bedrock.AsIChatClient(modelId));
+//   The UseFunctionInvocation() extension method is used to enable function calling capabilities (Tools) in the chat client.
+builder.Services.AddChatClient(bedrock.AsIChatClient(modelId))
+    .UseFunctionInvocation();
 
 // 3. Register the SerperSearchTool so it can be injected into any part of the app
 builder.Services.AddHttpClient<SerperSearchTool>();
+builder.Services.AddTransient<VacationResearcher>();
 
 var app = builder.Build();
 
@@ -33,5 +36,8 @@ app.MapGet("/ask", async (string question, IChatClient chatClient) =>
 
 app.MapGet("/search", async (string q, SerperSearchTool search) =>
     await search.SearchWebAsync(q));
+
+app.MapGet("/research", async (string destination, VacationResearcher researcher, CancellationToken ct) =>
+    await researcher.ResearchAsync(destination, ct));
 
 app.Run();
