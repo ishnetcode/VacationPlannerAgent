@@ -1,0 +1,153 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Vacation Planner</title>
+    <!-- marked: converts Markdown to HTML. DOMPurify: makes that HTML safe to display -->
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/dompurify/dist/purify.min.js"></script>
+    <style>
+        body {
+            font-family: system-ui, sans-serif;
+            background: #f4f6f8;
+            margin: 0;
+            color: #1f2937;
+        }
+
+        main {
+            max-width: 760px;
+            margin: 40px auto;
+            padding: 0 16px;
+        }
+
+        h1 {
+            margin-bottom: 4px;
+        }
+
+        .subtitle {
+            color: #6b7280;
+            margin-top: 0;
+        }
+
+        form {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+            background: white;
+            padding: 16px;
+            border-radius: 12px;
+            box-shadow: 0 1px 3px rgba(0,0,0,.08);
+        }
+
+        input {
+            padding: 10px;
+            border: 1px solid #d1d5db;
+            border-radius: 8px;
+            font-size: 16px;
+        }
+
+        #destination {
+            flex: 1;
+            min-width: 200px;
+        }
+
+        #days {
+            width: 80px;
+        }
+
+        button {
+            padding: 10px 20px;
+            border: 0;
+            border-radius: 8px;
+            background: #2563eb;
+            color: white;
+            font-size: 16px;
+            cursor: pointer;
+        }
+
+            button:disabled {
+                background: #93c5fd;
+                cursor: wait;
+            }
+
+        #status {
+            margin: 16px 0;
+            color: #6b7280;
+        }
+
+        #report {
+            background: white;
+            padding: 8px 24px;
+            border-radius: 12px;
+            box-shadow: 0 1px 3px rgba(0,0,0,.08);
+            line-height: 1.6;
+        }
+
+            #report:empty {
+                display: none;
+            }
+
+        .error {
+            color: #b91c1c;
+        }
+    </style>
+</head>
+<body>
+    <main>
+        <h1>✈️ Vacation Planner</h1>
+        <p class="subtitle">Two AI agents research your destination and plan your trip.</p>
+
+        <form id="planForm">
+            <input id="destination" placeholder="Where to? e.g. Lisbon" required>
+            <input id="days" type="number" min="1" max="14" value="3" title="Number of days">
+            <button id="planButton" type="submit">Plan my trip</button>
+        </form>
+
+        <p id="status"></p>
+        <div id="report"></div>
+    </main>
+
+    <script type="module">
+          const form = document.getElementById("planForm");
+          const button = document.getElementById("planButton");
+          const status = document.getElementById("status");
+          const report = document.getElementById("report");
+
+          form.addEventListener("submit", async (e) => {
+            e.preventDefault();  // stop the browser reloading the page
+
+            const destination = document.getElementById("destination").value.trim();
+            const days = document.getElementById("days").value;
+
+            // Show a "working" state with a timer, since the agents take 20-40 seconds
+            button.disabled = true;
+            report.innerHTML = "";
+            status.className = "";
+            let seconds = 0;
+            status.textContent = "🧭 Researching and planning... 0s";
+            const timer = setInterval(() => {
+              seconds++;
+              status.textContent = `🧭 Researching and planning... ${seconds}s`;
+            }, 1000);
+
+            try {
+              // Call your existing /plan endpoint
+              const url = `/plan?destination=${encodeURIComponent(destination)}&days=${days}`;
+              const response = await fetch(url);
+              if (!response.ok) throw new Error(`Server returned ${response.status}`);
+
+              const markdown = await response.text();
+              report.innerHTML = DOMPurify.sanitize(marked.parse(markdown));
+              status.textContent = `✅ Done in ${seconds}s`;
+            } catch (err) {
+              status.className = "error";
+              status.textContent = `❌ Something went wrong: ${err.message}. Check the terminal for details.`;
+            } finally {
+              clearInterval(timer);
+              button.disabled = false;
+            }
+          });
+    </script>
+</body>
+</html>

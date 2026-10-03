@@ -21,7 +21,8 @@ builder.Services.AddTransient<TripPlanner>();
 
 var app = builder.Build();
 
-app.MapGet("/", () => "Hello World!");
+app.UseDefaultFiles();  // visiting "/" will serve index.html
+app.UseStaticFiles();   // serve files from the wwwroot folder
 
 app.MapGet("/ask", async (string question, IChatClient chatClient) =>
 {
